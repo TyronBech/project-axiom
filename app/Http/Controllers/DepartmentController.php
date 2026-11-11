@@ -6,6 +6,7 @@ use App\Http\Requests\DepartmentIndexRequest;
 use App\Models\Department;
 use Illuminate\Http\Request;
 use App\Http\Requests\DepartmentRequest;
+use App\Http\Requests\DepartmentUpdateRequest;
 
 class DepartmentController extends Controller
 {
@@ -54,16 +55,21 @@ class DepartmentController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(DepartmentUpdateRequest $request, Department $department)
     {
-        //
+        $validated = $request->validated();
+        $department->update($validated);
+
+        return response()->json($department);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Department $department)
     {
-        //
+        $department->delete();
+
+        return response()->noContent();
     }
 }
