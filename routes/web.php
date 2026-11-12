@@ -7,4 +7,4 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::apiResource('departments', DepartmentController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+Route::apiResource('departments', DepartmentController::class)->middlewareFor('update', 'auth')->only(['index', 'store', 'show', 'update', 'destroy']);
