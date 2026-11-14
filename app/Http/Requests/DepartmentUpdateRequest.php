@@ -12,7 +12,7 @@ class DepartmentUpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->department_id === $this->route('department')->id;
+        return $this->user()->can('update', $this->route('department'));
     }
 
     /**
