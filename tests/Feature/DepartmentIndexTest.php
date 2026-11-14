@@ -2,11 +2,15 @@
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Department;
+use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 
 pest()->use(RefreshDatabase::class);
 
-test('test list of departments', function () {
-    Department::create([
+beforeEach(function () {
+    $this->seed(RolePermissionSeeder::class);
+
+    $this->department = Department::create([
         'code' => 'HR',
         'name' => 'Human Resources',
     ]);
@@ -15,6 +19,16 @@ test('test list of departments', function () {
         'name' => 'Finance',
     ]);
 
+    $this->user = User::factory()->create([
+        'department_id' => $this->department->id,
+    ]);
+
+    $this->user->assignRole('department.editor');
+
+    $this->actingAs($this->user);
+});
+
+test('test list of departments', function () {
     $response = $this->getJson(route('departments.index'));
     $response->assertOk();
 
@@ -31,15 +45,6 @@ test('test list of departments', function () {
 });
 
 test('test list of filtered departments with SQL-like syntax', function () {
-    Department::create([
-        'code' => 'HR',
-        'name' => 'Human Resources',
-    ]);
-    Department::create([
-        'code' => 'FIN',
-        'name' => 'Finance',
-    ]);
-
     $response = $this->getJson(route('departments.index', ['code' => "HR' OR '1'='1"]));
     $response->assertOk();
     $response->assertJsonCount(0);
@@ -47,15 +52,6 @@ test('test list of filtered departments with SQL-like syntax', function () {
 });
 
 test('test list of filtered departments with valid code', function () {
-    Department::create([
-        'code' => 'HR',
-        'name' => 'Human Resources',
-    ]);
-    Department::create([
-        'code' => 'FIN',
-        'name' => 'Finance',
-    ]);
-
     $response = $this->getJson(route('departments.index', ['code' => "HR"]));
     $response->assertOk();
     $response->assertJsonCount(1);
