@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Department;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 pest()->use(RefreshDatabase::class);
 
@@ -26,7 +26,7 @@ beforeEach(function () {
 
 test('a department can be updated', function () {
     $response = $this->patchJson(route('departments.update', $this->department), [
-        'name' => 'People Operations'
+        'name' => 'People Operations',
     ]);
     $response->assertOk();
     $this->assertDatabaseHas('departments', [
@@ -54,24 +54,23 @@ test('a department update request fails with empty name', function () {
     ]);
 });
 
-test('an update ignores an unvalidated code', function () {
+test('a department code can be updated on its own', function () {
     $response = $this->patchJson(route('departments.update', $this->department), [
         'code' => 'HRD',
-        'name' => 'Human Resource Development',
     ]);
 
     $response->assertOk();
     $this->assertDatabaseHas('departments', [
         'id' => $this->department->id,
-        'code' => 'HR',
-        'name' => 'Human Resource Development',
+        'code' => 'HRD',
+        'name' => 'Human Resources',
     ]);
 });
 
 test('a department update fails with unauthenticated user', function () {
     auth()->logout();
     $response = $this->patchJson(route('departments.update', $this->department), [
-        'name' => 'People Operations'
+        'name' => 'People Operations',
     ]);
 
     $response->assertUnauthorized();
@@ -88,7 +87,7 @@ test('a user can only update its own department', function () {
         'name' => 'Finance',
     ]);
     $response = $this->patchJson(route('departments.update', $finance), [
-        'name' => 'Financial Operations'
+        'name' => 'Financial Operations',
     ]);
 
     $response->assertForbidden();
@@ -102,7 +101,7 @@ test('a user can only update its own department', function () {
 test('a department viewer cannot update their own department', function () {
     $this->user->syncRoles('department.viewer');
     $response = $this->patchJson(route('departments.update', $this->department), [
-        'name' => 'People Operations'
+        'name' => 'People Operations',
     ]);
 
     $response->assertForbidden();
@@ -116,7 +115,7 @@ test('a department viewer cannot update their own department', function () {
 test('a user with multiple roles can update their own department', function () {
     $this->user->syncRoles(['department.viewer', 'department.editor']);
     $response = $this->patchJson(route('departments.update', $this->department), [
-        'name' => 'People Operations'
+        'name' => 'People Operations',
     ]);
 
     $response->assertOk();
@@ -124,5 +123,67 @@ test('a user with multiple roles can update their own department', function () {
         'id' => $this->department->id,
         'code' => 'HR',
         'name' => 'People Operations',
+    ]);
+});
+
+test('a user can update code, name, and status of their own department', function () {
+    $response = $this->patchJson(route('departments.update', $this->department), [
+        'code' => 'HRD',
+        'name' => 'Human Resource Development',
+        'status' => 'inactive',
+    ]);
+
+    $response->assertOk();
+    $this->assertDatabaseHas('departments', [
+        'id' => $this->department->id,
+        'code' => 'HRD',
+        'name' => 'Human Resource Development',
+        'status' => 'inactive',
+    ]);
+});
+
+test('a department update fails with the same code as another department', function () {
+    $finance = Department::create([
+        'code' => 'FIN',
+        'name' => 'Finance',
+    ]);
+    $response = $this->patchJson(route('departments.update', $this->department), [
+        'code' => 'FIN',
+        'name' => 'Human Resource Development',
+    ]);
+
+    $response->assertUnprocessable();
+    $response->assertJsonValidationErrors(['code']);
+    $this->assertDatabaseHas('departments', [
+        'id' => $this->department->id,
+        'code' => 'HR',
+        'name' => 'Human Resources',
+    ]);
+});
+
+test('a department cannot be updated with invalid status', function () {
+    $response = $this->patchJson(route('departments.update', $this->department), [
+        'status' => 'archived',
+    ]);
+
+    $response->assertUnprocessable();
+    $response->assertJsonValidationErrors(['status']);
+    $this->assertDatabaseHas('departments', [
+        'id' => $this->department->id,
+        'code' => 'HR',
+        'name' => 'Human Resources',
+        'status' => 'active',
+    ]);
+});
+
+test('a department can be updated with its own code', function () {
+    $response = $this->patchJson(route('departments.update', $this->department), [
+        'code' => 'HR',
+    ]);
+
+    $response->assertOk();
+    $this->assertDatabaseHas('departments', [
+        'id' => $this->department->id,
+        'code' => 'HR',
     ]);
 });

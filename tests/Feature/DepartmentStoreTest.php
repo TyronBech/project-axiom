@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Department;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 pest()->use(RefreshDatabase::class);
 
@@ -94,7 +94,7 @@ test('a department status must be either active or inactive', function () {
 
 test('SQL-like department codes are treated as literal values', function () {
     $existingResponse = $this->postJson(route('departments.store'), [
-        'code' => "HR",
+        'code' => 'HR',
         'name' => 'Human Resources',
     ]);
     $sqlLikeResponse = $this->postJson(route('departments.store'), [
@@ -105,7 +105,7 @@ test('SQL-like department codes are treated as literal values', function () {
     $existingResponse->assertCreated();
     $sqlLikeResponse->assertCreated();
     $this->assertDatabaseHas('departments', [
-        'code' => "HR",
+        'code' => 'HR',
         'name' => 'Human Resources',
     ]);
     $this->assertDatabaseHas('departments', [
@@ -113,4 +113,19 @@ test('SQL-like department codes are treated as literal values', function () {
         'name' => 'Human Resources',
     ]);
     $this->assertDatabaseCount('departments', 3);
+});
+
+test('a user cannot create a department without the correct permission', function () {
+    $this->user->syncRoles('department.viewer');
+
+    $response = $this->postJson(route('departments.store'), [
+        'code' => 'HR',
+        'name' => 'Human Resources',
+    ]);
+
+    $response->assertForbidden();
+    $this->assertDatabaseMissing('departments', [
+        'code' => 'HR',
+        'name' => 'Human Resources',
+    ]);
 });

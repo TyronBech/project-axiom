@@ -3,35 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DepartmentIndexRequest;
-use App\Models\Department;
-use Illuminate\Http\Request;
 use App\Http\Requests\DepartmentRequest;
 use App\Http\Requests\DepartmentUpdateRequest;
+use App\Models\Department;
+use App\Services\DepartmentService;
+use Illuminate\Support\Facades\Gate;
 
 class DepartmentController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(DepartmentIndexRequest $request)
+    public function index(DepartmentIndexRequest $request, DepartmentService $service)
     {
         $validated = $request->validated();
-        $query = Department::query();
 
-        if (isset($validated['code'])) {
-            $query->where('code', $validated['code']);
-        }
-
-        return $query->get();
+        return $service->list($validated);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(DepartmentRequest $request)
+    public function store(DepartmentRequest $request, DepartmentService $service)
     {
         $validated = $request->validated();
-        $department = Department::create($validated);
+        $department = $service->create($validated);
 
         return response()->json($department, 201);
     }
@@ -41,6 +37,8 @@ class DepartmentController extends Controller
      */
     public function show(Department $department)
     {
+        Gate::authorize('view', $department);
+
         return response()->json($department);
     }
 
@@ -55,10 +53,10 @@ class DepartmentController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(DepartmentUpdateRequest $request, Department $department)
+    public function update(DepartmentUpdateRequest $request, Department $department, DepartmentService $service)
     {
         $validated = $request->validated();
-        $department->update($validated);
+        $department = $service->update($department, $validated);
 
         return response()->json($department);
     }
@@ -66,10 +64,16 @@ class DepartmentController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Department $department)
+    public function destroy(Department $department, DepartmentService $service)
     {
-        $department->delete();
+        Gate::authorize('delete', $department);
 
-        return response()->noContent();
+        $deleted = $service->delete($department);
+
+        return $deleted
+            ? response()->noContent()
+            : response()->json([
+                'message' => 'Cannot delete department with associated users.',
+            ], 409);
     }
 }

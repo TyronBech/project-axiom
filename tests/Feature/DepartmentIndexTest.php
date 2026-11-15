@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Department;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 pest()->use(RefreshDatabase::class);
 
@@ -52,7 +52,7 @@ test('test list of filtered departments with SQL-like syntax', function () {
 });
 
 test('test list of filtered departments with valid code', function () {
-    $response = $this->getJson(route('departments.index', ['code' => "HR"]));
+    $response = $this->getJson(route('departments.index', ['code' => 'HR']));
     $response->assertOk();
     $response->assertJsonCount(1);
     $response->assertJsonFragment([
@@ -74,4 +74,11 @@ test('test list of SQL-like literal value department', function () {
         'code' => "HR' OR 1=1; --",
         'name' => 'Human Resources',
     ]);
+});
+
+test('test list of department for user without view permission', function () {
+    $this->user->syncRoles([]);
+    $response = $this->getJson(route('departments.index'));
+
+    $response->assertForbidden();
 });
