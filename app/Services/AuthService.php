@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\UserStatus;
+use App\Exceptions\InactiveAccountException;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
@@ -13,6 +15,10 @@ class AuthService
 
         if (!$user || !Hash::check($password, $user->password)) {
             return null;
+        }
+
+        if (!$user->status || $user->status !== UserStatus::ACTIVE) {
+            throw new InactiveAccountException();
         }
 
         return $user->createToken($deviceName)->plainTextToken;
