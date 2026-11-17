@@ -19,6 +19,8 @@ beforeEach(function () {
         'department_id' => $this->department->id,
     ]);
 
+    $this->user->refresh();
+
     $this->user->assignRole('department.editor');
 
     $this->actingAs($this->user);

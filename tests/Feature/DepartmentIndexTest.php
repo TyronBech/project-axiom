@@ -23,6 +23,8 @@ beforeEach(function () {
         'department_id' => $this->department->id,
     ]);
 
+    $this->user->refresh();
+
     $this->user->assignRole('department.editor');
 
     $this->actingAs($this->user);
@@ -81,4 +83,15 @@ test('test list of department for user without view permission', function () {
     $response = $this->getJson(route('departments.index'));
 
     $response->assertForbidden();
+});
+
+test('user cannot access departments if inactive', function () {
+    $this->user->update(['status' => 'inactive']);
+
+    $response = $this->getJson(route('departments.index'));
+
+    $response->assertStatus(403);
+    $response->assertJson([
+        'message' => 'Your account is inactive. Please contact support.',
+    ]);
 });

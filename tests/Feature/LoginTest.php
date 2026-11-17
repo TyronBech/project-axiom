@@ -67,8 +67,8 @@ test('an authenticated user can access the /user endpoint', function () {
     $token = $response->json('token');
 
     $userResponse = $this->withToken($token)->getJson('api/user');
-
     $userResponse->assertOk();
+    $userResponse->assertJsonPath('id', $this->user->id);
 });
 
 test('a user cannot login with inactive status', function () {
@@ -101,4 +101,31 @@ test('a user gets 401 error for wrong credentials with inactive status', functio
         'message' => 'The provided credentials are incorrect.',
     ]);
     $this->assertDatabaseCount('personal_access_tokens', 0);
+});
+
+test('a user gets 403 error for inactive status while authenticated', function () {
+    $response = $this->postJson('api/login', [
+        'email' => $this->user->email,
+        'password' => 'password',
+        'device_name' => 'Postman',
+    ]);
+
+    $token = $response->json('token');
+
+    $this->user->update(['status' => 'inactive']);
+
+    $userResponse = $this->withToken($token)->getJson('api/user');
+    $userResponse->assertForbidden();
+    $userResponse->assertJson([
+        'message' => 'Your account is inactive. Please contact support.',
+    ]);
+});
+
+test('a user requesting /user endpoint without token gets 401 error', function () {
+    $userResponse = $this->getJson('api/user');
+
+    $userResponse->assertUnauthorized();
+    $userResponse->assertJson([
+        'message' => 'Unauthenticated.',
+    ]);
 });

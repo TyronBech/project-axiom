@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DepartmentController;
+use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -8,5 +9,5 @@ Route::get('/', function () {
 });
 
 Route::apiResource('departments', DepartmentController::class)
-    ->middleware('auth')
+    ->middleware(['auth', EnsureUserIsActive::class])
     ->only(['index', 'store', 'show', 'update', 'destroy']);
