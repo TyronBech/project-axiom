@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginRequest;
 use App\Services\AuthService;
 use App\Exceptions\InactiveAccountException;
+use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
@@ -32,5 +33,11 @@ class AuthController extends Controller
         return response()->json([
             'token' => $response,
         ]);
+    }
+
+    public function logout(Request $request) {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->noContent();
     }
 }
