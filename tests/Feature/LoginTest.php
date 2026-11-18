@@ -129,3 +129,30 @@ test('a user requesting /user endpoint without token gets 401 error', function (
         'message' => 'Unauthenticated.',
     ]);
 });
+
+test('a user can login 5 attempts and gets 429 error on 6th attempt', function () {
+    for($i = 0; $i < 5; $i++) {
+        $response = $this->postJson('api/login', [
+            'email' => $this->user->email,
+            'password' => 'wrong-password',
+            'device_name' => 'Postman',
+        ]);
+
+        $response->assertUnauthorized();
+        $response->assertJson([
+            'message' => 'The provided credentials are incorrect.',
+        ]);
+    }
+    $response = $this->postJson('api/login', [
+        'email' => $this->user->email,
+        'password' => 'wrong-password',
+        'device_name' => 'Postman',
+    ]);
+
+    $response->assertTooManyRequests();
+    $response->assertJson([
+        'message' => 'Too many login attempts. Please try again later.',
+    ]);
+    $response->assertHeader('Retry-After');
+    $this->assertDatabaseCount('personal_access_tokens', 0);
+});
