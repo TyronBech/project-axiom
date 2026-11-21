@@ -3,10 +3,13 @@
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\Department;
 use App\Models\User;
+use Database\Seeders\RolePermissionSeeder;
 
 pest()->use(RefreshDatabase::class);
 
 beforeEach(function () {
+    $this->seed(RolePermissionSeeder::class);
+
     $this->department = Department::create([
         'name' => 'Test Department',
         'code' => 'TEST',
@@ -16,6 +19,10 @@ beforeEach(function () {
         'department_id' => $this->department->id,
         'password' => bcrypt('password'),
     ]);
+
+    $this->user->refresh();
+
+    $this->user->assignRole('user.admin');
 });
 
 test('a user can logout', function () {
@@ -34,7 +41,7 @@ test('a user can logout', function () {
 
     auth()->forgetGuards();
 
-    $userResponse = $this->withToken($token)->getJson('api/user');
+    $userResponse = $this->withToken($token)->getJson('api/users');
     $userResponse->assertUnauthorized();
 });
 
@@ -64,9 +71,9 @@ test('a user only logs out from the current device', function () {
 
     auth()->forgetGuards();
 
-    $userResponse = $this->withToken($postmanToken)->getJson('api/user');
+    $userResponse = $this->withToken($postmanToken)->getJson('api/users');
     $userResponse->assertUnauthorized();
 
-    $userResponseMobile = $this->withToken($mobileToken)->getJson('api/user');
+    $userResponseMobile = $this->withToken($mobileToken)->getJson('api/users');
     $userResponseMobile->assertOk();
 });

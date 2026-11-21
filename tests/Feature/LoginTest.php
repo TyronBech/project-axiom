@@ -3,10 +3,13 @@
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\User;
 use App\Models\Department;
+use Database\Seeders\RolePermissionSeeder;
 
 pest()->uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    $this->seed(RolePermissionSeeder::class);
+
     $this->department = Department::create([
         'name' => 'Test Department',
         'code' => 'TEST',
@@ -16,6 +19,8 @@ beforeEach(function () {
         'department_id' => $this->department->id,
         'password' => bcrypt('password'),
     ]);
+
+    $this->user->assignRole('user.admin');
 });
 
 test('a user can log in', function () {
@@ -66,9 +71,11 @@ test('an authenticated user can access the /user endpoint', function () {
 
     $token = $response->json('token');
 
-    $userResponse = $this->withToken($token)->getJson('api/user');
+    $userResponse = $this->withToken($token)->getJson('api/users');
     $userResponse->assertOk();
-    $userResponse->assertJsonPath('id', $this->user->id);
+    $userResponse->assertJsonFragment([
+        'email' => $this->user->email,
+    ]);
 });
 
 test('a user cannot login with inactive status', function () {
@@ -114,7 +121,7 @@ test('a user gets 403 error for inactive status while authenticated', function (
 
     $this->user->update(['status' => 'inactive']);
 
-    $userResponse = $this->withToken($token)->getJson('api/user');
+    $userResponse = $this->withToken($token)->getJson('api/users');
     $userResponse->assertForbidden();
     $userResponse->assertJson([
         'message' => 'Your account is inactive. Please contact support.',
@@ -122,7 +129,7 @@ test('a user gets 403 error for inactive status while authenticated', function (
 });
 
 test('a user requesting /user endpoint without token gets 401 error', function () {
-    $userResponse = $this->getJson('api/user');
+    $userResponse = $this->getJson('api/users');
 
     $userResponse->assertUnauthorized();
     $userResponse->assertJson([
