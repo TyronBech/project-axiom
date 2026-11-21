@@ -23,6 +23,10 @@ class UserService
             $users->where('status', $filters['status']);
         }
 
+        if (isset($filters['department_id'])) {
+            $users->with('department')->where('department_id', $filters['department_id']);
+        }
+
         return $users->get();
     }
 }

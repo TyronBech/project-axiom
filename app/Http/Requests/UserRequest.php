@@ -24,9 +24,10 @@ class UserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'email' => ['sometimes', 'required', 'string', 'email', 'max:255'],
-            'status' => ['sometimes', 'required', 'string', 'in:active,inactive'],
+            'name'          => ['sometimes', 'required', 'string', 'max:255'],
+            'email'         => ['sometimes', 'required', 'string', 'email', 'max:255'],
+            'status'        => ['sometimes', 'required', 'string', 'in:active,inactive'],
+            'department_id' => ['sometimes', 'required', 'integer', 'exists:departments,id'],
         ];
     }
 }

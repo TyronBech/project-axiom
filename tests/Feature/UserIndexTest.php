@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Database\Factories\UserFactory;
 use Database\Seeders\RolePermissionSeeder;
 use App\Models\User;
 use App\Models\Department;
@@ -127,4 +126,69 @@ test('a user cannot search for list with SQL injection attempt', function () {
 
     $response->assertOk();
     $response->assertJsonCount(0);
+});
+
+test('a user can search for list of users based on department', function () {
+    $this->user->assignRole('user.admin');
+
+    $token = $this->user->createToken('test-token')->plainTextToken;
+
+    $department2 = Department::create([
+        'code' => 'TEST2',
+        'name' => 'Test Department 2',
+    ]);
+
+    User::create([
+        'department_id' => $department2->id,
+        'name' => 'Jane Doe',
+        'email' => 'jane@example.com',
+        'password' => bcrypt('password'),
+    ]);
+
+    $response = $this->withToken($token)->getJson(route('users.index', ['department_id' => $department2->id]));
+
+    $response->assertOk();
+    $response->assertJsonCount(1);
+    $response->assertJsonFragment([
+        'name' => 'Jane Doe',
+    ]);
+});
+
+test('a soft-deleted user cannot be viewed in the list of users', function () {
+    $this->user->assignRole('user.admin');
+
+    $token = $this->user->createToken('test-token')->plainTextToken;
+
+    $softDeletedUser = User::create([
+        'department_id' => $this->department->id,
+        'name' => 'Soft Deleted User',
+        'email' => 'softdeleted@example.com',
+        'password' => bcrypt('password'),
+    ]);
+
+    $softDeletedUser->delete();
+
+    $response = $this->withToken($token)->getJson(route('users.index', ['name' => 'Soft Deleted User']));
+
+    $response->assertOk();
+    $response->assertJsonCount(0);
+    $response->assertJsonMissing([
+        'id' => $softDeletedUser->id,
+        'name' => $softDeletedUser->name,
+        'email' => $softDeletedUser->email,
+    ]);
+});
+
+test('a user\'s password and remember_token are hidden in the list of users', function () {
+    $this->user->assignRole('user.admin');
+
+    $token = $this->user->createToken('test-token')->plainTextToken;
+
+    $response = $this->withToken($token)->getJson(route('users.index'));
+
+    $response->assertOk();
+    $response->assertJsonMissing([
+        'password' => $this->user->password,
+        'remember_token' => $this->user->remember_token,
+    ]);
 });
