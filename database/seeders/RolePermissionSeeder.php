@@ -19,10 +19,16 @@ class RolePermissionSeeder extends Seeder
         DB::transaction(function (): void {
             // Create permissions
             $permissions = [
+                // Permissions for department management
                 'department.view',
                 'department.create',
                 'department.update',
                 'department.delete',
+                // Permissions for user management
+                'user.view',
+                'user.create',
+                'user.update',
+                'user.delete',
             ];
 
             foreach ($permissions as $permission) {
@@ -32,18 +38,27 @@ class RolePermissionSeeder extends Seeder
             // Create roles
             $viewer = Role::firstOrCreate(['name' => 'department.viewer']);
             $editor = Role::firstOrCreate(['name' => 'department.editor']);
+            $admin = Role::firstOrCreate(['name' => 'user.admin']);
 
             app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
             // Assign permissions to roles
-            $viewer->syncPermissions(['department.view']);
+            $viewer->syncPermissions([
+                'department.view',
+            ]);
             $editor->syncPermissions([
                 'department.view',
                 'department.create',
                 'department.update',
                 'department.delete',
             ]);
+            $admin->syncPermissions([
+                'department.view',
+                'user.view',
+                'user.create',
+                'user.update',
+                'user.delete',
+            ]);
         });
-
     }
 }
